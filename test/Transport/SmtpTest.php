@@ -199,6 +199,26 @@ class SmtpTest extends TestCase
         $this->assertStringContainsString("\r\n\r\nThis is only a test.", $data, $data);
     }
 
+    /**
+     * Fold long lines during smtp communication in Protocol\Smtp class.
+     * Test folding of long lines following RFC 5322 section-2.2.3
+     *
+     * @see https://github.com/laminas/laminas-mail/pull/138
+     */
+    public function testLongLinesFoldingRFC5322(): void
+    {
+        $message = $this->getMessage();
+        $headerValue = 'LjnjJdpGGk+cTVBUQzDxEQ5PK4r7tGGbhZZ/zYsmW3X6dcn+/bxvLzgL3kbCPvj9oayzcDs/xeUTn/iILPY2XsD8vZBL4F3h6/dev7yvn6AqoLaZdyUIxYfYWVHQ67jhdVrLhhVDOY2K8V9AV2NMvwc7jytA3ygU1dlMmmuIG+L79NIX8y6LMldSaUmBcaPRBIdcmAoVHg+TMMzQLG+SuL56f4Te06w6aonCfdcTQLjGxGOcFUaDOBqeCL/5zcejW/vsJnNmXFwRpzIGz3rmLAg/FeE5Rsl4DTuYEm1Paq6975Q7NTy2bUitnnGfqtXARsMFnDODlkgA7G5GljnZc+o2njG5rMj7IEhMDSOIbo/c6/zh2/trSMttBlW1AZzBWwl8xWH5GycTRPIw+xb1r6AS5uKb6QIrPgbd0FB9QyrBynyZu8pF30FSSQ6jenRFyOJ71sAwn42ohcdsh1UZ4xjdSeRzbGQDwGS8Vo8haOOl+PY6OR25oMVfe1pgaF4QnN7dxnIw3DU182F4Sa6HrkGZfi78TUI/hhWEqF5UvnCrnG0Khc6siugveKfJOnc1yAdJNhO0dkDsj6NEHf/Y5IfuKibowmklSTgjNcJ58LZ8oX8PSEzCFnp3Ky8yOzXf3zhbaZ8eYMecWjGY5xa2T+BaxW1bGeomh7fgBV5X5Uz/ZRCtSQEzIORJNnN+Bvl5c7fxbTXr6mg6zojn/XFO7x8OiYumCwzWGwzHe5sQDEKFqvsm4g36IDUXkGwhk178oUK062Hy7Hg1do25U69BJib/hQLQCVrh2lOuVJsL6005Po+V/BXA9GyJhHN1WRvYka5QZN9Iu3fv7XMvIPzqphoJaeFFQxabXHbQ+tGPm+hSi22MQkwG+M9kdvHcAH4fnk9DjoIfPZI4OHP7fttFw4vCpHgzSV4z/65IXtY+t7cgPa9ablO+d623P7pq4TIvpVtc7DSkkYVdGiRBZa14tapLEJPToX+QafT9o0OokwE=';
+        $message->getHeaders()->addHeaders([
+            'X-Ms-Exchange-Antispam-Messagedata' => $headerValue,
+        ]);
+
+        $this->transport->send($message);
+        $data = $this->connection->getLog();
+        // The original header can't be present if it's wrapped
+        $this->assertStringNotContainsString($headerValue, $data);
+    }
+
     public function testCanUseAuthenticationExtensionsViaPluginManager(): void
     {
         $options    = new SmtpOptions([
